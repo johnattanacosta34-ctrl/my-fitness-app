@@ -2,7 +2,7 @@ import streamlit as st, pandas as pd, json, os
 
 st.set_page_config(page_title="Daily Dashboard", page_icon="⚡", layout="centered")
 
-# --- DISEÑO GENERAL (FONDO NEGRO, LETRAS BLANCAS, CAJAS NARANJAS) ---
+# --- DISEÑO GENERAL (FONDO NEGRO, LETRAS BLANCAS, CAJAS NARANJAS MÁS PEQUEÑAS) ---
 st.markdown("""
     <style>
         :root { color-scheme: dark !important; }
@@ -12,22 +12,22 @@ st.markdown("""
         /* Textos generales en blanco */
         h1, h2, h3, h4, h5, h6, p, span, label, div { color: #FFFFFF !important; }
         
-        /* Tarjetas / Cajas Naranjas (Para los bloques principales o métricas) */
+        /* Tarjetas / Cajas Naranjas internas */
         .custom-card { background: linear-gradient(135deg, #FF8C42 0%, #FF701A 100%) !important; padding: 20px !important; border-radius: 16px !important; margin-bottom: 15px !important; box-shadow: 0 10px 25px rgba(255, 140, 66, 0.25) !important; border: none !important; }
         .custom-card * { color: #000000 !important; }
         .card-title { font-size: 12px !important; font-weight: 700 !important; text-transform: uppercase !important; opacity: 0.85; margin-bottom: 6px !important; }
         .card-body { font-size: 32px !important; font-weight: 800 !important; }
 
-        /* Estilo para los botones principales que simulan cajas */
+        /* Estilo para los botones principales (ahora más compactos y con mejor distribución) */
         div.stButton > button {
             background: linear-gradient(135deg, #FF8C42 0%, #FF701A 100%) !important;
             color: #000000 !important;
             border: none !important;
-            border-radius: 16px !important;
+            border-radius: 12px !important;
             font-weight: 700 !important;
-            font-size: 18px !important;
-            padding: 24px !important;
-            box-shadow: 0 10px 25px rgba(255, 140, 66, 0.25) !important;
+            font-size: 15px !important;
+            padding: 12px 16px !important;
+            box-shadow: 0 6px 15px rgba(255, 140, 66, 0.2) !important;
             transition: all 0.2s ease-in-out;
             width: 100% !important;
         }
@@ -91,26 +91,23 @@ if st.session_state.seccion_activa == "Home":
             st.rerun()
         
     st.markdown("<hr style='margin: 15px 0; border-color: #2C2C2E;'>", unsafe_allow_html=True)
-    
     st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
     
-    # Las 3 cajas principales verticales estilo tarjeta
-    if st.button("👤 Profile", use_container_width=True):
-        st.session_state.seccion_activa = "Profile"
-        st.session_state.profile_subview = "Main"
-        st.rerun()
-        
-    st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
-    
-    if st.button("🏋️ Workout", use_container_width=True):
-        st.session_state.seccion_activa = "Workout"
-        st.rerun()
-        
-    st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
-    
-    if st.button("✨ Wellness", use_container_width=True):
-        st.session_state.seccion_activa = "Wellness"
-        st.rerun()
+    # Cajas principales distribuidas en columnas o más compactas en tamaño
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        if st.button("👤 Profile", use_container_width=True):
+            st.session_state.seccion_activa = "Profile"
+            st.session_state.profile_subview = "Main"
+            st.rerun()
+    with c2:
+        if st.button("🏋️ Workout", use_container_width=True):
+            st.session_state.seccion_activa = "Workout"
+            st.rerun()
+    with c3:
+        if st.button("✨ Wellness", use_container_width=True):
+            st.session_state.seccion_activa = "Wellness"
+            st.rerun()
 
 # SECCIÓN SETTINGS
 elif st.session_state.seccion_activa == "Settings":
