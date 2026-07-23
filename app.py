@@ -13,14 +13,28 @@ st.set_page_config(
 # --- CSS AVANZADO (Fondo blanco, cajas naranjas y letra negra) ---
 st.markdown("""
     <style>
+        /* Forzar modo claro en la app web y evitar inversión en móviles */
+        :root {
+            color-scheme: light !important;
+        }
+        
         /* Fondo blanco puro y texto negro general para toda la app */
-        .stApp { background-color: #FFFFFF !important; color: #000000 !important; }
+        .stApp { 
+            background-color: #FFFFFF !important; 
+            color: #000000 !important; 
+        }
         
         /* Títulos principales y subtítulos en negro */
-        h1, h2, h3, h4, h5, h6 { color: #000000 !important; font-family: 'Helvetica Neue', Arial, sans-serif; font-weight: 800; }
+        h1, h2, h3, h4, h5, h6 { 
+            color: #000000 !important; 
+            font-family: 'Helvetica Neue', Arial, sans-serif; 
+            font-weight: 800; 
+        }
         
-        /* Textos generales y etiquetas en negro */
-        p, span, label, .stMarkdown, div { color: #000000; }
+        /* Textos generales, etiquetas y párrafos en negro */
+        p, span, label, .stMarkdown, div, .stTextInput, .stNumberInput { 
+            color: #000000 !important; 
+        }
         
         /* Ocultar barra lateral por completo */
         section[data-testid="stSidebar"] { display: none !important; }
@@ -70,9 +84,17 @@ st.markdown("""
             font-size: 13px !important; 
             font-weight: 600 !important; 
         }
+        
+        /* Forzar fondo blanco y texto negro en las tablas */
+        .stDataFrame {
+            background-color: #FFFFFF !important;
+        }
+        table {
+            color: #000000 !important;
+            background-color: #FFFFFF !important;
+        }
     </style>
 """, unsafe_allow_html=True)
-
 # --- DATA PERSISTENCE ---
 DATA_FILE = "reading_data.json"
 
