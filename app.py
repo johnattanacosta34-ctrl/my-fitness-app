@@ -7,31 +7,32 @@ st.set_page_config(
     layout="centered"
 )
 
-# Estilo CSS para fijar los botones en horizontal y darles aspecto de barra de navegación
+# CSS avanzado para forzar que las columnas se queden horizontales en celulares
 st.markdown("""
     <style>
-        /* Forzar que las columnas de la navegación inferior no se apilen y estén juntas */
-        div.row-widget.stHorizontal {
-            display: flex;
-            flex-direction: row;
-            justify-content: space-between;
+        /* Forzar que los bloques de columnas mantengan un ancho del 33% y no se apilen */
+        [data-testid="column"] {
+            width: 33.3333% !important;
+            flex: 1 1 33.3333% !important;
+            min-width: 33.3333% !important;
         }
-        /* Estética de los botones de navegación */
+        /* Estética compacta para los botones de navegación */
         .stButton button {
             width: 100%;
             border-radius: 8px;
             font-weight: bold;
+            font-size: 14px;
+            padding: 8px 4px;
         }
     </style>
 """, unsafe_allow_html=True)
 
 st.title("⚡ Mi Panel Diario")
 
-# Inicializar el estado de la navegación si no existe
+# Inicializar el estado de la navegación
 if 'seccion_activa' not in st.session_state:
     st.session_state.seccion_activa = "Wellness"
 
-# Separador visual superior
 st.markdown("---")
 
 # Contenido según la sección activa
