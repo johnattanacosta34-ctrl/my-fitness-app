@@ -12,68 +12,32 @@ st.markdown("""
         /* Textos generales en blanco */
         h1, h2, h3, h4, h5, h6, p, span, label, div { color: #FFFFFF !important; }
         
-        /* Tarjetas / Cajas Naranjas */
+        /* Tarjetas / Cajas Naranjas (Para los bloques principales o métricas) */
         .custom-card { background: linear-gradient(135deg, #FF8C42 0%, #FF701A 100%) !important; padding: 20px !important; border-radius: 16px !important; margin-bottom: 15px !important; box-shadow: 0 10px 25px rgba(255, 140, 66, 0.25) !important; border: none !important; }
-        .custom-card * { color: #000000 !important; } /* Texto dentro de las tarjetas naranjas en negro para contraste */
+        .custom-card * { color: #000000 !important; }
         .card-title { font-size: 12px !important; font-weight: 700 !important; text-transform: uppercase !important; opacity: 0.85; margin-bottom: 6px !important; }
         .card-body { font-size: 32px !important; font-weight: 800 !important; }
-        .card-sub { font-size: 13px !important; font-weight: 600 !important; opacity: 0.9; }
 
-        /* Botones generales del Dashboard (Cuadrícula 2x2) estilizados en naranja o modo oscuro minimalista */
+        /* Estilo para los botones principales que simulan cajas */
         div.stButton > button {
-            background-color: #161618 !important;
-            color: #FFFFFF !important;
-            border: 1px solid #2C2C2E !important;
-            border-radius: 12px !important;
-            font-weight: 600 !important;
+            background: linear-gradient(135deg, #FF8C42 0%, #FF701A 100%) !important;
+            color: #000000 !important;
+            border: none !important;
+            border-radius: 16px !important;
+            font-weight: 700 !important;
+            font-size: 18px !important;
+            padding: 24px !important;
+            box-shadow: 0 10px 25px rgba(255, 140, 66, 0.25) !important;
             transition: all 0.2s ease-in-out;
+            width: 100% !important;
         }
         div.stButton > button:hover {
-            border-color: #FF701A !important;
-            color: #FF701A !important;
-        }
-        
-        .block-container { padding-bottom: 130px !important; }
-
-        /* Contenedor principal que simula la píldora flotante */
-        div.fixed-dock {
-            position: fixed !important;
-            bottom: 25px !important;
-            left: 50% !important;
-            transform: translateX(-50%) !important;
-            background-color: #161618 !important;
-            padding: 8px 12px !important;
-            border-radius: 40px !important;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.6) !important;
-            z-index: 999999 !important;
-            border: 1px solid #2C2C2E !important;
-            width: auto !important;
-            max-width: 90% !important;
-        }
-
-        div.fixed-dock [data-testid="column"] {
-            width: auto !important;
-            flex: 1 !important;
-            min-width: 90px !important;
-        }
-
-        div.fixed-dock button {
-            background-color: transparent !important;
-            color: #8E8E93 !important;
+            opacity: 0.9 !important;
+            color: #000000 !important;
             border: none !important;
-            border-radius: 30px !important;
-            font-size: 13px !important;
-            font-weight: 600 !important;
-            width: 100% !important;
-            padding: 8px 0px !important;
-            box-shadow: none !important;
-            transition: all 0.2s ease-in-out;
         }
         
-        div.fixed-dock button:hover {
-            color: #FFFFFF !important;
-            background-color: rgba(255, 255, 255, 0.08) !important;
-        }
+        .block-container { padding-bottom: 50px !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -94,14 +58,14 @@ if "active_books" not in st.session_state:
     })
     st.session_state.completed_books = data.get("completed_books", [])
     st.session_state.user_profile = data.get("user_profile", {
-        "username": "felipeacosta1",
+        "username": "Felipe Acosta",
         "weight": 82.7,
         "bmi": 27.6,
         "fat": 23.4,
         "fat_mass": 19.3
     })
 
-if 'seccion_activa' not in st.session_state: st.session_state.seccion_activa = "Profile"
+if 'seccion_activa' not in st.session_state: st.session_state.seccion_activa = "Home"
 if 'profile_subview' not in st.session_state: st.session_state.profile_subview = "Main"
 
 def save_data():
@@ -112,38 +76,70 @@ def save_data():
             "user_profile": st.session_state.user_profile
         }, f)
 
-# --- BASES DE DATOS ---
-MEALS_DB = {
-    "Monday": {"B": "2 Weetabix + 1 banana + 1 scoop Whey", "L": "250g Chicken + 110g Rice", "D": "250g Chicken + Vegetables"},
-    "Tuesday": {"B": "40g oats + 1 banana", "L": "200g Beef + 250g Potato", "D": "200g White Fish"},
-}
-WORKOUTS = {
-    "DAY 1 – UPPER (STRENGTH)": [("Barbell Bench Press (kg)", 22.5), ("Barbell Row (kg)", 17.5)]
-}
+# --- NAVEGACIÓN PRINCIPAL ---
 
-# --- NAVEGACIÓN Y VISTAS PRINCIPALES ---
-if st.session_state.seccion_activa == "Profile":
+# PÁGINA DE INICIO (HOME)
+if st.session_state.seccion_activa == "Home":
     
-    # 1. VISTA PRINCIPAL DEL PERFIL
+    # Cabecera con Nombre a la izquierda y Botón de Ajustes a la derecha
+    col_name, col_settings = st.columns([4, 1])
+    with col_name:
+        st.markdown(f"## **{st.session_state.user_profile['username']}**")
+    with col_settings:
+        if st.button("⚙️", help="Settings"):
+            st.session_state.seccion_activa = "Settings"
+            st.rerun()
+        
+    st.markdown("<hr style='margin: 15px 0; border-color: #2C2C2E;'>", unsafe_allow_html=True)
+    
+    st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
+    
+    # Las 3 cajas principales verticales estilo tarjeta
+    if st.button("👤 Profile", use_container_width=True):
+        st.session_state.seccion_activa = "Profile"
+        st.session_state.profile_subview = "Main"
+        st.rerun()
+        
+    st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
+    
+    if st.button("🏋️ Workout", use_container_width=True):
+        st.session_state.seccion_activa = "Workout"
+        st.rerun()
+        
+    st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
+    
+    if st.button("✨ Wellness", use_container_width=True):
+        st.session_state.seccion_activa = "Wellness"
+        st.rerun()
+
+# SECCIÓN SETTINGS
+elif st.session_state.seccion_activa == "Settings":
+    if st.button("⬅️ Back"):
+        st.session_state.seccion_activa = "Home"
+        st.rerun()
+    st.title("⚙️ Settings")
+    
+    with st.form("settings_form"):
+        new_name = st.text_input("Nombre de usuario", value=st.session_state.user_profile["username"])
+        if st.form_submit_button("Guardar Cambios", use_container_width=True):
+            st.session_state.user_profile["username"] = new_name
+            save_data()
+            st.success("¡Nombre de usuario actualizado con éxito!")
+
+# SECCIÓN PROFILE (Y SUS SUBVISTAS)
+elif st.session_state.seccion_activa == "Profile":
+    
+    if st.button("⬅️ Back"):
+        if st.session_state.profile_subview == "Main":
+            st.session_state.seccion_activa = "Home"
+        else:
+            st.session_state.profile_subview = "Main"
+        st.rerun()
+
     if st.session_state.profile_subview == "Main":
+        st.title("👤 Profile Dashboard")
         
-        # Cabecera limpia con foto, nombre de usuario y engranaje de configuración
-        col_avatar, col_name, col_settings = st.columns([1, 3, 1])
-        with col_avatar:
-            st.markdown("👤", help="Tu foto de perfil")
-        with col_name:
-            st.markdown(f"### **{st.session_state.user_profile['username']}**")
-        with col_settings:
-            if st.button("⚙️", help="Settings"):
-                st.session_state.profile_subview = "Settings"
-                st.rerun()
-            
-        st.markdown("<hr style='margin: 15px 0; border-color: #2C2C2E;'>", unsafe_allow_html=True)
-        st.markdown("#### Dashboard")
-        
-        # Las 4 Boxes / Tarjetas en cuadrícula 2x2
         b_col1, b_col2 = st.columns(2)
-        
         with b_col1:
             if st.button("📈 Statistics", use_container_width=True):
                 st.session_state.profile_subview = "Statistics"
@@ -151,7 +147,6 @@ if st.session_state.seccion_activa == "Profile":
             if st.button("📏 Measures", use_container_width=True):
                 st.session_state.profile_subview = "Measures"
                 st.rerun()
-                
         with b_col2:
             if st.button("📅 Calendar", use_container_width=True):
                 st.session_state.profile_subview = "Calendar"
@@ -160,34 +155,11 @@ if st.session_state.seccion_activa == "Profile":
                 st.session_state.profile_subview = "Goals"
                 st.rerun()
 
-    # 2. SUBVISTA: SETTINGS (Gestión de nombre de usuario)
-    elif st.session_state.profile_subview == "Settings":
-        if st.button("⬅️ Volver al Perfil"):
-            st.session_state.profile_subview = "Main"
-            st.rerun()
-        st.title("⚙️ Settings")
-        
-        st.markdown("### Editar Perfil")
-        with st.form("settings_form"):
-            new_name = st.text_input("Nombre de usuario", value=st.session_state.user_profile["username"])
-            if st.form_submit_button("Guardar Cambios", use_container_width=True):
-                st.session_state.user_profile["username"] = new_name
-                save_data()
-                st.success("¡Nombre de usuario actualizado con éxito!")
-
-    # 3. SUBVISTA: STATISTICS
     elif st.session_state.profile_subview == "Statistics":
-        if st.button("⬅️ Volver al Perfil"):
-            st.session_state.profile_subview = "Main"
-            st.rerun()
         st.title("📈 Statistics")
         st.info("Aquí verás tus gráficos de rendimiento y estadísticas de progreso.")
 
-    # 4. SUBVISTA: MEASURES (Tarjetas naranjas aplicadas aquí)
     elif st.session_state.profile_subview == "Measures":
-        if st.button("⬅️ Volver al Perfil"):
-            st.session_state.profile_subview = "Main"
-            st.rerun()
         st.title("📏 Measures & Body Metrics")
         
         with st.form("measures_form"):
@@ -209,11 +181,7 @@ if st.session_state.seccion_activa == "Profile":
         m3.markdown(f"<div class='custom-card'><div class='card-title'>Body Fat</div><div class='card-body'>{st.session_state.user_profile['fat']}%</div></div>", unsafe_allow_html=True)
         m4.markdown(f"<div class='custom-card'><div class='card-title'>Fat Mass</div><div class='card-body'>{st.session_state.user_profile['fat_mass']}</div></div>", unsafe_allow_html=True)
 
-    # 5. SUBVISTA: CALENDAR
     elif st.session_state.profile_subview == "Calendar":
-        if st.button("⬅️ Volver al Perfil"):
-            st.session_state.profile_subview = "Main"
-            st.rerun()
         st.title("📅 Calendar & Schedule")
         schedule_data = {
             "Time Window": ["07:30 – 08:00", "08:00 – 09:30", "09:30 – 10:30"],
@@ -222,38 +190,24 @@ if st.session_state.seccion_activa == "Profile":
         }
         st.dataframe(pd.DataFrame(schedule_data), use_container_width=True, hide_index=True)
 
-    # 6. SUBVISTA: GOALS
     elif st.session_state.profile_subview == "Goals":
-        if st.button("⬅️ Volver al Perfil"):
-            st.session_state.profile_subview = "Main"
-            st.rerun()
         st.title("🎯 Targets & Goals")
         st.write("• Target Weight: 74 kg")
         st.write("• Target BMI: 24")
         st.write("• Target Body Fat: 13%")
 
+# SECCIÓN WORKOUT
 elif st.session_state.seccion_activa == "Workout":
+    if st.button("⬅️ Back"):
+        st.session_state.seccion_activa = "Home"
+        st.rerun()
     st.title("🏋️ Workout Session")
     st.write("Sección de entrenamientos...")
 
+# SECCIÓN WELLNESS
 elif st.session_state.seccion_activa == "Wellness":
+    if st.button("⬅️ Back"):
+        st.session_state.seccion_activa = "Home"
+        st.rerun()
     st.title("✨ Wellness Hub")
     st.write("Sección de bienestar...")
-
-# --- BARRA DE NAVEGACIÓN FLOTANTE INFERIOR ---
-st.markdown('<div class="fixed-dock">', unsafe_allow_html=True)
-dcol1, dcol2, dcol3 = st.columns(3)
-with dcol1:
-    if st.button("👤 Profile", use_container_width=True): 
-        st.session_state.seccion_activa = "Profile"
-        st.session_state.profile_subview = "Main"
-        st.rerun()
-with dcol2:
-    if st.button("🏋️ Workout", use_container_width=True): 
-        st.session_state.seccion_activa = "Workout"
-        st.rerun()
-with dcol3:
-    if st.button("🌿 Wellness", use_container_width=True): 
-        st.session_state.seccion_activa = "Wellness"
-        st.rerun()
-st.markdown('</div>', unsafe_allow_html=True)
