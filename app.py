@@ -38,16 +38,26 @@ if "data_loaded" not in st.session_state:
     
 
 # --- CUSTOM THEME ---
+# --- CUSTOM THEME ---
 st.markdown("""
     <style>
-    .stApp { background-color: #0d1117; color: #ffffff; }
-    h1 { color: #00f2fe !important; font-family: 'Helvetica Neue', Arial, sans-serif; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
-    h2, h3 { color: #ff007f !important; font-family: 'Helvetica Neue', Arial, sans-serif; font-weight: 700; }
-    section[data-testid="stSidebar"] { background-color: #161b22 !important; border-right: 2px solid #ff007f !important; }
-    .custom-card { background: linear-gradient(145deg, #1f2937, #111827); border-left: 5px solid #00f2fe; padding: 20px; border-radius: 8px; margin-bottom: 15px; }
-    .card-title { color: #ff007f; font-size: 14px; font-weight: bold; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px; }
-    .card-body { color: #ffffff; font-size: 28px; font-weight: 800; margin-bottom: 4px; }
-    .card-sub { color: #00f2fe; font-size: 13px; font-weight: 600; }
+    /* Main App Background & Text */
+    .stApp { background-color: #FFF5E5; color: #2D3748; }
+    
+    /* Main Titles (Deep Teal) */
+    h1 { color: #006D77 !important; font-family: 'Helvetica Neue', Arial, sans-serif; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+    
+    /* Subheadings (Deep Violet) */
+    h2, h3 { color: #5B21B6 !important; font-family: 'Helvetica Neue', Arial, sans-serif; font-weight: 700; }
+    
+    /* Sidebar Styling */
+    section[data-testid="stSidebar"] { background-color: #FAFAFA !important; border-right: 2px solid #FF8C42 !important; }
+    
+    /* Custom Metric Cards */
+    .custom-card { background: linear-gradient(145deg, #FFFFFF, #F7F3E9); border-left: 5px solid #FF8C42; padding: 20px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+    .card-title { color: #5B21B6; font-size: 14px; font-weight: bold; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px; }
+    .card-body { color: #2D3748; font-size: 28px; font-weight: 800; margin-bottom: 4px; }
+    .card-sub { color: #006D77; font-size: 13px; font-weight: 600; }
     </style>
 """, unsafe_allow_html=True)
 
