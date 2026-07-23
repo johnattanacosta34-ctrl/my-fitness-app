@@ -1,350 +1,241 @@
-import streamlit as st
-import pandas as pd
-import json
-import os
+import streamlit as st, pandas as pd, json, os
 
-# --- CONFIGURACIÓN DE LA PÁGINA ---
-st.set_page_config(
-    page_title="Mi Panel Diario",
-    page_icon="⚡",
-    layout="centered"
-)
+st.set_page_config(page_title="Daily Dashboard", page_icon="⚡", layout="centered")
 
-# --- CSS AVANZADO (Fondo blanco, cajas naranjas y letra negra) ---
+# --- DISEÑO GENERAL Y BARRA FLOTANTE ---
 st.markdown("""
     <style>
-        /* Forzar modo claro en la app web y evitar inversión en móviles */
-        :root {
-            color-scheme: light !important;
-        }
+        :root { color-scheme: light !important; }
+        .stApp { background-color: #FAFAFC !important; color: #111111 !important; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+        section[data-testid="stSidebar"], #MainMenu, footer { display: none !important; }
         
-        /* Fondo blanco puro y texto negro general para toda la app */
-        .stApp { 
-            background-color: #FFFFFF !important; 
-            color: #000000 !important; 
-        }
+        .custom-card { background: linear-gradient(135deg, #FF8C42 0%, #FF701A 100%) !important; padding: 20px !important; border-radius: 16px !important; margin-bottom: 15px !important; box-shadow: 0 10px 25px rgba(255, 140, 66, 0.25) !important; }
+        .custom-card * { color: #000000 !important; }
+        .card-title { font-size: 12px !important; font-weight: 700 !important; text-transform: uppercase !important; opacity: 0.85; margin-bottom: 6px !important; }
+        .card-body { font-size: 32px !important; font-weight: 800 !important; }
+        .card-sub { font-size: 13px !important; font-weight: 600 !important; opacity: 0.9; }
         
-        /* Títulos principales y subtítulos en negro */
-        h1, h2, h3, h4, h5, h6 { 
-            color: #000000 !important; 
-            font-family: 'Helvetica Neue', Arial, sans-serif; 
-            font-weight: 800; 
-        }
-        
-        /* Textos generales, etiquetas y párrafos en negro */
-        p, span, label, .stMarkdown, div, .stTextInput, .stNumberInput { 
-            color: #000000 !important; 
-        }
-        
-        /* Ocultar barra lateral por completo */
-        section[data-testid="stSidebar"] { display: none !important; }
-        
-        /* Forzar distribución horizontal de los botones de navegación */
-        [data-testid="column"] {
-            width: 33.3333% !important;
-            flex: 1 1 33.3333% !important;
-            min-width: 33.3333% !important;
-        }
-        
-        /* Botones de navegación inferiores */
-        .stButton button {
-            width: 100% !important;
-            border-radius: 6px !important;
-            font-weight: 600 !important;
-            font-size: 13px !important;
-            padding: 6px 2px !important;
-            min-height: 35px !important;
+        .block-container { padding-bottom: 130px !important; }
+
+        /* Contenedor principal que simula la píldora flotante */
+        div.fixed-dock {
+            position: fixed !important;
+            bottom: 25px !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            background-color: #161618 !important;
+            padding: 8px 12px !important;
+            border-radius: 40px !important;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4) !important;
+            z-index: 999999 !important;
+            border: 1px solid #2C2C2E !important;
+            width: auto !important;
+            max-width: 90% !important;
         }
 
-        /* Tarjetas / Boxes personalizadas en NARANJA con letra NEGRA */
-        .custom-card { 
-            background-color: #FF8C42 !important; 
-            border-left: 6px solid #D96B27 !important; 
-            padding: 20px !important; 
-            border-radius: 8px !important; 
-            margin-bottom: 15px !important; 
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important; 
+        div.fixed-dock [data-testid="column"] {
+            width: auto !important;
+            flex: 1 !important;
+            min-width: 90px !important;
         }
-        .custom-card * { 
-            color: #000000 !important; 
-        }
-        .card-title { 
-            font-size: 14px !important; 
-            font-weight: bold !important; 
-            text-transform: uppercase !important; 
-            margin-bottom: 4px !important; 
-            letter-spacing: 0.5px !important; 
-        }
-        .card-body { 
-            font-size: 28px !important; 
-            font-weight: 800 !important; 
-            margin-bottom: 4px !important; 
-        }
-        .card-sub { 
-            font-size: 13px !important; 
-            font-weight: 600 !important; 
+
+        div.fixed-dock button {
+            background-color: transparent !important;
+            color: #8E8E93 !important;
+            border: none !important;
+            border-radius: 30px !important;
+            font-size: 13px !important;
+            font-weight: 600 !important;
+            width: 100% !important;
+            padding: 8px 0px !important;
+            box-shadow: none !important;
+            transition: all 0.2s ease-in-out;
         }
         
-        /* Forzar fondo blanco y texto negro en las tablas */
-        .stDataFrame {
-            background-color: #FFFFFF !important;
-        }
-        table {
-            color: #000000 !important;
-            background-color: #FFFFFF !important;
+        div.fixed-dock button:hover {
+            color: #FFFFFF !important;
+            background-color: rgba(255, 255, 255, 0.08) !important;
         }
     </style>
 """, unsafe_allow_html=True)
-# --- DATA PERSISTENCE ---
-DATA_FILE = "reading_data.json"
 
-def load_data():
+# --- PERSISTENCIA DE DATOS CON MANEJO SEGURO ---
+DATA_FILE = "reading_data.json"
+if "active_books" not in st.session_state:
     if os.path.exists(DATA_FILE):
-        with open(DATA_FILE, "r") as f:
-            return json.load(f)
-    return {
-        "active_books": {
-            "Straight Jacket by Matthew Todd": {"read": 135, "total": 300},
-            "Murder in the Dressing Room": {"read": 30, "total": 300},
-            "Heated Rivalry by Rachel Reid": {"read": 255, "total": 300},
-            "Game Changer by Rachel Reid": {"read": 0, "total": 300},
-            "Long Game by Rachel Reid": {"read": 0, "total": 300}
-        },
-        "completed_books": []
-    }
+        try:
+            with open(DATA_FILE, "r") as f: data = json.load(f)
+        except:
+            data = {}
+    else:
+        data = {}
+        
+    st.session_state.active_books = data.get("active_books", {
+        "Straight Jacket by Matthew Todd": {"read": 135, "total": 300},
+        "Heated Rivalry by Rachel Reid": {"read": 255, "total": 300}
+    })
+    st.session_state.completed_books = data.get("completed_books", [])
+    st.session_state.user_profile = data.get("user_profile", {
+        "username": "felipeacosta1",
+        "weight": 82.7,
+        "bmi": 27.6,
+        "fat": 23.4,
+        "fat_mass": 19.3
+    })
+
+if 'seccion_activa' not in st.session_state: st.session_state.seccion_activa = "Profile"
+if 'profile_subview' not in st.session_state: st.session_state.profile_subview = "Main"
 
 def save_data():
     with open(DATA_FILE, "w") as f:
         json.dump({
-            "active_books": st.session_state.active_books,
-            "completed_books": st.session_state.completed_books
+            "active_books": st.session_state.active_books, 
+            "completed_books": st.session_state.completed_books,
+            "user_profile": st.session_state.user_profile
         }, f)
 
-# Inicializar Session State
-if "data_loaded" not in st.session_state:
-    data = load_data()
-    st.session_state.active_books = data["active_books"]
-    st.session_state.completed_books = data["completed_books"]
-    st.session_state.data_loaded = True
+# --- BASES DE DATOS ---
+MEALS_DB = {
+    "Monday": {"B": "2 Weetabix + 1 banana + 1 scoop Whey", "L": "250g Chicken + 110g Rice", "D": "250g Chicken + Vegetables"},
+    "Tuesday": {"B": "40g oats + 1 banana", "L": "200g Beef + 250g Potato", "D": "200g White Fish"},
+}
+WORKOUTS = {
+    "DAY 1 – UPPER (STRENGTH)": [("Barbell Bench Press (kg)", 22.5), ("Barbell Row (kg)", 17.5)]
+}
 
-if 'seccion_activa' not in st.session_state:
-    st.session_state.seccion_activa = "Wellness"
-
-# --- CONTENIDO SEGÚN LA SECCIÓN ACTIVA ---
-
-if st.session_state.seccion_activa == "Wellness":
-    st.title("Wellness & Lifestyle")
+# --- NAVEGACIÓN Y VISTAS PRINCIPALES ---
+if st.session_state.seccion_activa == "Profile":
     
-    # Sub-pestañas internas para Wellness (Reading list y Nutrition plan)
-    sub_wellness = st.radio("ÁREA DE WELLNESS:", ["Reading List", "Nutrition Plan"], horizontal=True)
-    st.markdown("---")
-    
-    if sub_wellness == "Reading List":
-        st.title("Reading Rotation Tracker")
-        col_b1, col_b2 = st.columns(2)
-        with col_b1:
-            st.markdown(f"<div class='custom-card'><div class='card-title'>Active Queue</div><div class='card-body'>{len(st.session_state.active_books)}</div></div>", unsafe_allow_html=True)
-        with col_b2:
-            st.markdown(f"<div class='custom-card'><div class='card-title'>Completed</div><div class='card-body'>{len(st.session_state.completed_books)}</div></div>", unsafe_allow_html=True)
+    # 1. VISTA PRINCIPAL DEL PERFIL
+    if st.session_state.profile_subview == "Main":
         
-        st.subheader("Add a New Book")
-        with st.form("book_form", clear_on_submit=True):
-            c1, c2, c3 = st.columns(3)
-            with c1: title = st.text_input("Book Title")
-            with c2: total = st.number_input("Total Pages", min_value=1, value=300)
-            with c3: read = st.number_input("Pages Read", min_value=0, value=0)
-            if st.form_submit_button("Add to Rotation"):
-                if title:
-                    st.session_state.active_books[title] = {"read": read, "total": total}
-                    save_data()
-                    st.rerun()
-
-        st.subheader("Books Currently in Rotation")
-        for book in list(st.session_state.active_books.keys()):
-            data = st.session_state.active_books[book]
-            col1, col2, col3 = st.columns([2, 1, 1])
-            with col1: st.markdown(f"**{book}**")
-            with col2: new_read = st.number_input("Pages Read", value=data['read'], key=f"read_{book}", label_visibility="collapsed")
-            with col3:
-                pct = int((new_read / data['total']) * 100)
-                st.write(f"{pct}% complete")
-            if new_read != data['read']:
-                if new_read >= data['total']:
-                    del st.session_state.active_books[book]
-                    st.session_state.completed_books.append(book)
-                    save_data()
-                    st.balloons()
-                else:
-                    st.session_state.active_books[book]['read'] = new_read
-                    save_data()
+        # Cabecera limpia con foto y nombre de usuario (sin contadores de workouts/followers)
+        col_avatar, col_name, col_settings = st.columns([1, 3, 1])
+        with col_avatar:
+            st.markdown("👤", help="Tu foto de perfil")
+        with col_name:
+            st.markdown(f"### **{st.session_state.user_profile['username']}**")
+        with col_settings:
+            if st.button("⚙️", help="Settings"):
+                st.session_state.profile_subview = "Settings"
+                st.rerun()
+            
+        st.markdown("<hr style='margin: 15px 0;'>", unsafe_allow_html=True)
+        st.markdown("#### Dashboard")
+        
+        # Las 4 Boxes / Tarjetas en cuadrícula 2x2
+        b_col1, b_col2 = st.columns(2)
+        
+        with b_col1:
+            if st.button("📈 Statistics", use_container_width=True):
+                st.session_state.profile_subview = "Statistics"
+                st.rerun()
+            if st.button("📏 Measures", use_container_width=True):
+                st.session_state.profile_subview = "Measures"
                 st.rerun()
                 
-        st.subheader("Completed History")
-        for book in st.session_state.completed_books: st.write(f"• {book}")
+        with b_col2:
+            if st.button("📅 Calendar", use_container_width=True):
+                st.session_state.profile_subview = "Calendar"
+                st.rerun()
+            if st.button("🎯 Goals", use_container_width=True):
+                st.session_state.profile_subview = "Goals"
+                st.rerun()
 
-    elif sub_wellness == "Nutrition Plan":
-        st.title("Nutrition Plan")
-        chosen_day = st.radio("SELECT DAY TO VIEW MEALS:", ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], horizontal=True)
-        meals_database = {
-            "Monday": {"B": "2 Weetabix + 1 banana + 1 scoop Whey + Black coffee", "L": "250g Chicken + 110g Rice + Vegetables", "D": "250g Chicken + Vegetables"},
-            "Tuesday": {"B": "40g oats + 1 banana + 1 scoop Whey OR 200g Greek yogurt + Coffee", "L": "200g Beef + 250g Potato + Vegetables", "D": "200g White Fish + Vegetables"},
-            "Wednesday": {"B": "2 Weetabix + 1 banana + 1 scoop Whey + Black coffee", "L": "250g Turkey + 110g Rice + Vegetables", "D": "200g Salmon + Salad"},
-            "Thursday": {"B": "40g oats + 1 banana + 1 scoop Whey OR 200g Greek yogurt + Coffee", "L": "250g Chicken + 110g Pasta + Vegetables", "D": "200g Hake Fish + Vegetables"},
-            "Friday": {"B": "2 Weetabix + 1 banana + 1 scoop Whey + Black coffee", "L": "200g Beef + 110g Rice + Salad", "D": "250g Chicken + Vegetables"},
-            "Saturday": {"B": "250g Chicken + 110g Rice + Vegetables", "L": "250g Chicken + 110g Rice + Vegetables", "D": "200g Salmon + Salad"},
-            "Sunday": {"B": "250g Chicken/Turkey + 110g Rice + Vegetables", "L": "250g Chicken/Turkey + 110g Rice + Vegetables", "D": "200g White Fish + Vegetables"}
-        }
-        day_meals = meals_database[chosen_day]
-        st.markdown(f"<div class='custom-card'><div class='card-title'>Breakfast</div><div class='card-body' style='font-size:16px; font-weight:normal;'>{day_meals['B']}</div></div>", unsafe_allow_html=True)
-        st.markdown(f"<div class='custom-card'><div class='card-title'>Lunch</div><div class='card-body' style='font-size:16px; font-weight:normal;'>{day_meals['L']}</div></div>", unsafe_allow_html=True)
-        st.markdown(f"<div class='custom-card'><div class='card-title'>Dinner</div><div class='card-body' style='font-size:16px; font-weight:normal;'>{day_meals['D']}</div></div>", unsafe_allow_html=True)
-        st.subheader("Custom Recipe Calculator")
-        kcal_lookup = {"chicken breast": {"cal": 165, "pro": 31}, "rice": {"cal": 130, "pro": 2.7}, "oats": {"cal": 389, "pro": 16.9}, "whey protein": {"cal": 400, "pro": 80}, "beef": {"cal": 250, "pro": 26}, "turkey": {"cal": 135, "pro": 30}, "greek yogurt": {"cal": 59, "pro": 10}, "pasta": {"cal": 131, "pro": 5}, "potato": {"cal": 77, "pro": 2}, "salmon": {"cal": 208, "pro": 20}, "weetabix": {"cal": 362, "pro": 12}, "banana": {"cal": 89, "pro": 1.1}, "vegetables": {"cal": 35, "pro": 2}}
-        ing_choice = st.selectbox("Pick Ingredient:", list(kcal_lookup.keys()))
-        ing_weight = st.number_input("Grams (g):", value=100, step=10)
-        calc_c = (kcal_lookup[ing_choice]["cal"] / 100) * ing_weight
-        calc_p = (kcal_lookup[ing_choice]["pro"] / 100) * ing_weight
-        st.info(f"**Current Estimate for {ing_weight}g of {ing_choice.title()}:** ~{round(calc_c)} Calories | ~{round(calc_p, 1)}g Protein")
+    # 2. SUBVISTA: SETTINGS (Aquí se movió la edición de usuario)
+    elif st.session_state.profile_subview == "Settings":
+        if st.button("⬅️ Volver al Perfil"):
+            st.session_state.profile_subview = "Main"
+            st.rerun()
+        st.title("⚙️ Settings")
+        
+        st.markdown("### Editar Perfil")
+        with st.form("settings_form"):
+            new_name = st.text_input("Nombre de usuario", value=st.session_state.user_profile["username"])
+            if st.form_submit_button("Guardar Cambios", use_container_width=True):
+                st.session_state.user_profile["username"] = new_name
+                save_data()
+                st.success("¡Nombre de usuario actualizado con éxito!")
 
-elif st.session_state.seccion_activa == "Workout":
-    st.title("Workouts")
-    day = st.selectbox("CHOOSE DAY:", ["DAY 1 – UPPER (STRENGTH)", "DAY 2 – LOWER (STRENGTH)", "DAY 3 – CARDIO + CORE", "DAY 4 – PUSH (CHEST + SHOULDERS)", "DAY 5 – PULL (V-TAPER)", "DAY 6 – LEGS + CONDITIONING"])
-    st.markdown("---")
-    if day == "DAY 1 – UPPER (STRENGTH)":
-        st.subheader("Upper Body Strength Focus")
-        w_bench = st.number_input("Barbell Bench Press — 4x5–8 (kg):", value=22.5, step=0.5)
-        w_row = st.number_input("Barbell Row — 4x6–8 (kg):", value=17.5, step=0.5)
-        st.markdown("---")
-        w_inc = st.number_input("Incline Dumbbell Press — 3x8–10 (kg):", value=26.0, step=0.5)
-        w_lat = st.number_input("Lat Pulldown / Pull-ups — 3x8–10 (kg):", value=57.0, step=0.5)
-        w_curl = st.number_input("Biceps Curl — 3x10-12 (kg):", value=18.0, step=0.5)
-        w_tri = st.number_input("Triceps Pushdown — 3x10-12 (kg):", value=28.0, step=0.5)
-        w_crunch = st.number_input("Cable Crunch — 3x12-15", value=28.0, step=0.5)
-        st.checkbox("Cardio: 20 min Stairmaster or Treadmill")
-    elif day == "DAY 2 – LOWER (STRENGTH)":
-        st.subheader("Lower Body Strength Focus")
-        w_squat = st.number_input("Barbell Squat — 4x5–8 (kg):", value=25.0, step=0.5)
-        w_rdl = st.number_input("Romanian Deadlift — 4x6–10 (kg):", value=25.0, step=0.5)
-        st.markdown("---")
-        w_press = st.number_input("Leg Press — 3x10–12 (kg):", value=35.0, step=0.5)
-        w_lcurl = st.number_input("Leg Curl — 3x10–12 (kg):", value=52.0, step=0.5)
-        w_calf = st.number_input("Calf Raises — 3x12–15 (kg):", value=79.0, step=0.5)
-        st.checkbox("Core: Hanging Leg Raise")
-        st.checkbox("Core: Plank")
-        st.checkbox("Cardio: 10 min Stairmaster or Treadmill")
-    elif day == "DAY 3 – CARDIO + CORE":
-        st.subheader("Cardio & Definition Core Day")
-        st.checkbox("Cardio: 30–40 min Incline Walk (Zone 2)")
-        st.checkbox("Abs: Cable Crunch — 3x12–15")
-        st.checkbox("Abs: Hanging Leg Raise — 3x10–12")
-        st.checkbox("Abs: Plank — 3×60 s")
-    elif day == "DAY 4 – PUSH (CHEST + SHOULDERS)":
-        st.subheader("Push Day Hypertrophy")
-        w_inc_b = st.number_input("Incline Barbell Press — 4x6–10 (kg):", value=20.0, step=0.5)
-        w_sh_p = st.number_input("Dumbbell Shoulder Press — 3x8-10 (kg):", value=36.0, step=0.5)
-        st.markdown("---")
-        w_db_b = st.number_input("Dumbbell Bench Press — 3x8–10 (kg):", value=26.0, step=0.5)
-        w_tri_p = st.number_input("Triceps Dips or Pushdown — 3x10–12 (kg):", value=28.0, step=0.5)
-        w_db_c = st.number_input("Dumbbell Curl — 3x10–12 (kg):", value=18.0, step=0.5)
-        w_cb_f = st.number_input("Cable Flyes — 3x12–15 (kg):", value=18.0, step=0.5)
-        w_l_r = st.number_input("Lateral Raises — 4x12–20 (kg):", value=18.0, step=0.5)
-        w_d_t = st.number_input("Dumbbell Triceps Extension (kg):", value=18.0, step=0.5)
-        st.checkbox("Cardio: 20 min Stairmaster or Treadmill")
-    elif day == "DAY 5 – PULL (V-TAPER)":
-        st.subheader("Pull & V-Taper Aesthetics")
-        w_lat_p = st.number_input("Lat Pulldown — 4x8–12 (kg):", value=52.0, step=0.5)
-        w_s_row = st.number_input("Seated Cable Row — 3x8–12 (kg):", value=52.0, step=0.5)
-        st.markdown("---")
-        w_b_row = st.number_input("Barbell Row — 3x6–10 (kg):", value=15.0, step=0.5)
-        w_face = st.number_input("Face Pulls — 3x12–15 (kg):", value=19.0, step=0.5)
-        w_rdelt = st.number_input("Rear Delt Flyes — 3x12–15 (kg):", value=45.0, step=0.5)
-        w_lat_r = st.number_input("Lateral Raises — 3×15-20 (kg):", value=32.0, step=0.5)
-        w_h_curl = st.number_input("Hammer Curl — 3x10–12 (kg):", value=16.0, step=0.5)
-        w_ez_curl = st.number_input("EZ Bar Curl — 3x8–10 (kg):", value=25.0, step=0.5)
-        st.checkbox("Cardio: 20 min Stairmaster or Treadmill")
-    elif day == "DAY 6 – LEGS + CONDITIONING":
-        st.subheader("Lower Body & Conditioning")
-        w_d = st.number_input("Deadlift or RDL — 3x5–8 (kg):", value=12.5, step=0.5)
-        w_lunge = st.number_input("Lunges — 3x10 per leg (kg):", value=12.5, step=0.5)
-        w_ext = st.number_input("Leg Extension — 3x10–12 (kg):", value=59.0, step=0.5)
-        w_lcurl6 = st.number_input("Leg Curl — 3x10–12 (kg):", value=41.0, step=0.5)
-        w_scalf = st.number_input("Seated Calf Raise — 4×12-15 (kg):", value=73.0, step=0.5)
-        w_calves = st.number_input("Calves — 3x12–15 (kg):", value=41.0, step=0.5)
-        st.checkbox("Cardio: 12 - 18 min")
-        st.checkbox("Abs: Cable Crunch 3x 12-15")
-    if st.button("Lock In Session Lifts"): st.success("Weights locked in!")
+    # 3. SUBVISTA: STATISTICS
+    elif st.session_state.profile_subview == "Statistics":
+        if st.button("⬅️ Volver al Perfil"):
+            st.session_state.profile_subview = "Main"
+            st.rerun()
+        st.title("📈 Statistics")
+        st.info("Aquí verás tus gráficos de rendimiento y estadísticas de progreso.")
 
-elif st.session_state.seccion_activa == "Profile":
-    st.title("Profile & Day Management")
-    
-    # Sub-pestañas internas para Profile (My Goals y My Day)
-    sub_profile = st.radio("SECCIÓN DE PERFIL:", ["My Goals", "My Day"], horizontal=True)
-    st.markdown("---")
-    
-    if sub_profile == "My Goals":
-        st.title("My Goals")
-        c1, c2, c3, c4 = st.columns(4)
-        with c1: cur_w = st.number_input("Weight (kg):", value=82.7, step=0.1)
-        with c2: cur_bmi = st.number_input("BMI Value:", value=27.6, step=0.1)
-        with c3: cur_bf = st.number_input("Body Fat %:", value=23.4, step=0.1)
-        with c4: cur_bfm = st.number_input("Fat Mass (kg):", value=19.3, step=0.1)
-        st.markdown("### Goals")
+    # 4. SUBVISTA: MEASURES
+    elif st.session_state.profile_subview == "Measures":
+        if st.button("⬅️ Volver al Perfil"):
+            st.session_state.profile_subview = "Main"
+            st.rerun()
+        st.title("📏 Measures & Body Metrics")
+        
+        with st.form("measures_form"):
+            c1, c2, c3, c4 = st.columns(4)
+            w = c1.number_input("Weight", value=float(st.session_state.user_profile["weight"]), step=0.1)
+            bmi = c2.number_input("BMI", value=float(st.session_state.user_profile["bmi"]), step=0.1)
+            bf = c3.number_input("Fat %", value=float(st.session_state.user_profile["fat"]), step=0.1)
+            fm = c4.number_input("Fat Mass", value=float(st.session_state.user_profile["fat_mass"]), step=0.1)
+            
+            if st.form_submit_button("Guardar Medidas", use_container_width=True):
+                st.session_state.user_profile.update({"weight": w, "bmi": bmi, "fat": bf, "fat_mass": fm})
+                save_data()
+                st.success("¡Medidas guardadas con éxito!")
+
+        st.markdown("<div style='margin: 15px 0;'></div>", unsafe_allow_html=True)
         m1, m2, m3, m4 = st.columns(4)
-        with m1: st.markdown(f"<div class='custom-card'><div class='card-title'>Weight Target</div><div class='card-body'>{cur_w} kg</div><div class='card-sub'>GOAL: 74.0 kg</div></div>", unsafe_allow_html=True)
-        with m2: st.markdown(f"<div class='custom-card'><div class='card-title'>BMI Target</div><div class='card-body'>{cur_bmi}</div><div class='card-sub'>GOAL: 24.0</div></div>", unsafe_allow_html=True)
-        with m3: st.markdown(f"<div class='custom-card'><div class='card-title'>Body Fat Target</div><div class='card-body'>{cur_bf}%</div><div class='card-sub'>GOAL: 13%</div></div>", unsafe_allow_html=True)
-        with m4: st.markdown(f"<div class='custom-card'><div class='card-title'>Fat Mass Target</div><div class='card-body'>{cur_bfm} kg</div><div class='card-sub'>GOAL: 9.0 kg</div></div>", unsafe_allow_html=True)
-        st.subheader("Tape Measurement Timeline (cm)")
-        c_w1, c_w2, c_w3, c_w4, c_w5 = st.columns(5)
-        with c_w1: in_cint = st.number_input("Waist Input:", value=89, step=1)
-        with c_w2: in_pech = st.number_input("Chest Input:", value=109, step=1)
-        with c_w3: in_homb = st.number_input("Shoulders Input:", value=125, step=1)
-        with c_w4: in_bice = st.number_input("Biceps Input:", value=39, step=1)
-        with c_w5: in_pier = st.number_input("Legs Input:", value=59, step=1)
-        measures_df = pd.DataFrame({
-            "Body Part": ["Waist", "Chest", "Shoulders", "Biceps", "Legs"],
-            "4/4/2026": [95, 105, 127, 39, 59],
-            "1/6/2026": [92, 105, 125, 38, 59],
-            "17/06/2026": [89, 109, 125, 39, 59],
-            "Your Current Entry": [in_cint, in_pech, in_homb, in_bice, in_pier],
-            "META TARGET": [80, 110, 130, 42, 60]
-        })
-        st.dataframe(measures_df, use_container_width=True, hide_index=True)
-        st.subheader("Projected Progress Timeline")
-        timeline_data = {
-            "Date Expected": ["July 22, 2026", "August 12, 2026", "September 9, 2026", "October 7, 2026", "November 11, 2026"],
-            "Milestone Target": ["Week 2", "Week 5 (Month 1)", "Week 9 (Month 2)", "Week 13 (Month 3)", "Week 18 (META GOAL)"],
-            "Estimated Weight Goal": ["81.7 kg", "80.7 kg", "78.7 kg", "76.7 kg", "74.0 kg"],
-            "Visual Changes & Milestones": ["Body debloats, fluid retention from June drops away.", "Waist approaching 87 cm. Strength metrics remain stable.", "Drastic change in the mirror. Waist around 84-85 cm; love handles fade.", "Arm vascularity showing up due to supersets. Waist around 81-82 cm.", "13% Body Fat Achieved. Lean athletic condition. Optimal waist at 78-79 cm."]
-        }
-        st.dataframe(pd.DataFrame(timeline_data), use_container_width=True, hide_index=True)
+        m1.markdown(f"<div class='custom-card'><div class='card-title'>Weight</div><div class='card-body'>{st.session_state.user_profile['weight']}</div></div>", unsafe_allow_html=True)
+        m2.markdown(f"<div class='custom-card'><div class='card-title'>BMI</div><div class='card-body'>{st.session_state.user_profile['bmi']}</div></div>", unsafe_allow_html=True)
+        m3.markdown(f"<div class='custom-card'><div class='card-title'>Body Fat</div><div class='card-body'>{st.session_state.user_profile['fat']}%</div></div>", unsafe_allow_html=True)
+        m4.markdown(f"<div class='custom-card'><div class='card-title'>Fat Mass</div><div class='card-body'>{st.session_state.user_profile['fat_mass']}</div></div>", unsafe_allow_html=True)
 
-    elif sub_profile == "My Day":
-        st.title("My Day")
+    # 5. SUBVISTA: CALENDAR
+    elif st.session_state.profile_subview == "Calendar":
+        if st.button("⬅️ Volver al Perfil"):
+            st.session_state.profile_subview = "Main"
+            st.rerun()
+        st.title("📅 Calendar & Schedule")
         schedule_data = {
-            "Time Window": ["07:30 AM – 08:00 AM", "08:00 AM – 09:30 AM", "09:30 AM – 10:30 AM", "10:30 AM – 12:00 PM", "12:00 PM – 01:00 PM", "01:00 PM – 02:30 PM", "02:30 PM – 03:00 PM", "03:00 PM – 04:30 PM", "04:30 PM – 06:00 PM", "06:00 PM – 06:45 PM", "06:45 PM onwards"],
-            "Activity": ["Wake Up & Prep", "Gym Session", "Shower & Breakfast", "Block 1: Job Applications", "Lunch Break / Cooking", "Block 2: SQL & Python", "Mandatory Break", "Block 3: The Difficult Project", "Guilt-Free Reading", "Walk to Pick Up mi marido", "Dinner & Free Time"],
-            "Strategy": ["No phone scrolling!", "Keep up the consistency.", "Refuel & transition.", "Apply 2-3 targeted roles.", "Mon/Wed/Fri: Cook. Tue/Thu/Sat: Leftovers.", "Learn new concepts.", "Step away from the screen.", "Work on ONE micro-task.", "Hit that 12-book goal!", "Fresh air and steps.", "Total guilt-free zone!"]
+            "Time Window": ["07:30 – 08:00", "08:00 – 09:30", "09:30 – 10:30"],
+            "Activity": ["🌅 Wake Up", "🏋️ Gym", "🍳 Breakfast"],
+            "Strategy": ["No scrolling", "Consistency", "Refuel"]
         }
         st.dataframe(pd.DataFrame(schedule_data), use_container_width=True, hide_index=True)
 
+    # 6. SUBVISTA: GOALS
+    elif st.session_state.profile_subview == "Goals":
+        if st.button("⬅️ Volver al Perfil"):
+            st.session_state.profile_subview = "Main"
+            st.rerun()
+        st.title("🎯 Targets & Goals")
+        st.write("• Target Weight: 74 kg")
+        st.write("• Target BMI: 24")
+        st.write("• Target Body Fat: 13%")
 
-# --- BARRA DE NAVEGACIÓN INFERIOR HORIZONTAL COMPACTA ---
-st.markdown("---")
+elif st.session_state.seccion_activa == "Workout":
+    st.title("🏋️ Workout Session")
+    st.write("Sección de entrenamientos...")
 
-col1, col2, col3 = st.columns(3)
+elif st.session_state.seccion_activa == "Wellness":
+    st.title("✨ Wellness Hub")
+    st.write("Sección de bienestar...")
 
-with col1:
-    if st.button("Wellness", use_container_width=True):
-        st.session_state.seccion_activa = "Wellness"
+# --- BARRA DE NAVEGACIÓN FLOTANTE INFERIOR ---
+st.markdown('<div class="fixed-dock">', unsafe_allow_html=True)
+dcol1, dcol2, dcol3 = st.columns(3)
+with dcol1:
+    if st.button("👤 Profile", use_container_width=True): 
+        st.session_state.seccion_activa = "Profile"
+        st.session_state.profile_subview = "Main"
         st.rerun()
-
-with col2:
-    if st.button("Workout", use_container_width=True):
+with dcol2:
+    if st.button("🏋️ Workout", use_container_width=True): 
         st.session_state.seccion_activa = "Workout"
         st.rerun()
-
-with col3:
-    if st.button("Profile", use_container_width=True):
-        st.session_state.seccion_activa = "Profile"
+with dcol3:
+    if st.button("🌿 Wellness", use_container_width=True): 
+        st.session_state.seccion_activa = "Wellness"
         st.rerun()
+st.markdown('</div>', unsafe_allow_html=True)
