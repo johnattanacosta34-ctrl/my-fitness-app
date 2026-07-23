@@ -1,9 +1,4 @@
 import streamlit as st
-import pandas as pd
-import json
-import os
-
-import streamlit as st
 
 # Configuración inicial para móvil
 st.set_page_config(
@@ -12,12 +7,20 @@ st.set_page_config(
     layout="centered"
 )
 
-# Estilo visual para simular una barra inferior fija (opcional pero estético)
+# Estilo CSS para fijar los botones en horizontal y darles aspecto de barra de navegación
 st.markdown("""
     <style>
+        /* Forzar que las columnas de la navegación inferior no se apilen y estén juntas */
+        div.row-widget.stHorizontal {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+        }
+        /* Estética de los botones de navegación */
         .stButton button {
             width: 100%;
-            border-radius: 10px;
+            border-radius: 8px;
+            font-weight: bold;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -28,28 +31,25 @@ st.title("⚡ Mi Panel Diario")
 if 'seccion_activa' not in st.session_state:
     st.session_state.seccion_activa = "Wellness"
 
-# Separador visual
+# Separador visual superior
 st.markdown("---")
 
 # Contenido según la sección activa
 if st.session_state.seccion_activa == "Wellness":
     st.header("🌿 Sección de Wellness")
     st.write("Aquí irá todo sobre dieta, lecturas, meditación y bienestar diario.")
-    # TODO: Añadir lógica de dieta, lecturas, agua, etc.
 
 elif st.session_state.seccion_activa == "Workout":
     st.header("💪 Sección de Workout")
     st.write("Aquí registrarás tus entrenamientos, rutinas, pesas y cardio.")
-    # TODO: Añadir lógica de entrenamientos y ejercicios.
 
 elif st.session_state.seccion_activa == "Profile":
     st.header("👤 Perfil y Métricas")
     st.write("Aquí verás tus metas personales, cálculos (TMB, macros) y resumen general.")
-    # TODO: Añadir cálculos, métricas y metas.
 
-# --- BARRA DE NAVEGACIÓN INFERIOR ---
+# --- BARRA DE NAVEGACIÓN INFERIOR HORIZONTAL ---
 st.markdown("---")
-st.write("### Navegación")
+
 col1, col2, col3 = st.columns(3)
 
 with col1:
