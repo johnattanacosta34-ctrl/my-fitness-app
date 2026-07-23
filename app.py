@@ -2,18 +2,36 @@ import streamlit as st, pandas as pd, json, os
 
 st.set_page_config(page_title="Daily Dashboard", page_icon="⚡", layout="centered")
 
-# --- DISEÑO GENERAL Y BARRA FLOTANTE ---
+# --- DISEÑO GENERAL (FONDO NEGRO, LETRAS BLANCAS, CAJAS NARANJAS) ---
 st.markdown("""
     <style>
-        :root { color-scheme: light !important; }
-        .stApp { background-color: #FAFAFC !important; color: #111111 !important; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+        :root { color-scheme: dark !important; }
+        .stApp { background-color: #000000 !important; color: #FFFFFF !important; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
         section[data-testid="stSidebar"], #MainMenu, footer { display: none !important; }
         
-        .custom-card { background: linear-gradient(135deg, #FF8C42 0%, #FF701A 100%) !important; padding: 20px !important; border-radius: 16px !important; margin-bottom: 15px !important; box-shadow: 0 10px 25px rgba(255, 140, 66, 0.25) !important; }
-        .custom-card * { color: #000000 !important; }
+        /* Textos generales en blanco */
+        h1, h2, h3, h4, h5, h6, p, span, label, div { color: #FFFFFF !important; }
+        
+        /* Tarjetas / Cajas Naranjas */
+        .custom-card { background: linear-gradient(135deg, #FF8C42 0%, #FF701A 100%) !important; padding: 20px !important; border-radius: 16px !important; margin-bottom: 15px !important; box-shadow: 0 10px 25px rgba(255, 140, 66, 0.25) !important; border: none !important; }
+        .custom-card * { color: #000000 !important; } /* Texto dentro de las tarjetas naranjas en negro para contraste */
         .card-title { font-size: 12px !important; font-weight: 700 !important; text-transform: uppercase !important; opacity: 0.85; margin-bottom: 6px !important; }
         .card-body { font-size: 32px !important; font-weight: 800 !important; }
         .card-sub { font-size: 13px !important; font-weight: 600 !important; opacity: 0.9; }
+
+        /* Botones generales del Dashboard (Cuadrícula 2x2) estilizados en naranja o modo oscuro minimalista */
+        div.stButton > button {
+            background-color: #161618 !important;
+            color: #FFFFFF !important;
+            border: 1px solid #2C2C2E !important;
+            border-radius: 12px !important;
+            font-weight: 600 !important;
+            transition: all 0.2s ease-in-out;
+        }
+        div.stButton > button:hover {
+            border-color: #FF701A !important;
+            color: #FF701A !important;
+        }
         
         .block-container { padding-bottom: 130px !important; }
 
@@ -26,7 +44,7 @@ st.markdown("""
             background-color: #161618 !important;
             padding: 8px 12px !important;
             border-radius: 40px !important;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.4) !important;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.6) !important;
             z-index: 999999 !important;
             border: 1px solid #2C2C2E !important;
             width: auto !important;
@@ -109,7 +127,7 @@ if st.session_state.seccion_activa == "Profile":
     # 1. VISTA PRINCIPAL DEL PERFIL
     if st.session_state.profile_subview == "Main":
         
-        # Cabecera limpia con foto y nombre de usuario (sin contadores de workouts/followers)
+        # Cabecera limpia con foto, nombre de usuario y engranaje de configuración
         col_avatar, col_name, col_settings = st.columns([1, 3, 1])
         with col_avatar:
             st.markdown("👤", help="Tu foto de perfil")
@@ -120,7 +138,7 @@ if st.session_state.seccion_activa == "Profile":
                 st.session_state.profile_subview = "Settings"
                 st.rerun()
             
-        st.markdown("<hr style='margin: 15px 0;'>", unsafe_allow_html=True)
+        st.markdown("<hr style='margin: 15px 0; border-color: #2C2C2E;'>", unsafe_allow_html=True)
         st.markdown("#### Dashboard")
         
         # Las 4 Boxes / Tarjetas en cuadrícula 2x2
@@ -142,7 +160,7 @@ if st.session_state.seccion_activa == "Profile":
                 st.session_state.profile_subview = "Goals"
                 st.rerun()
 
-    # 2. SUBVISTA: SETTINGS (Aquí se movió la edición de usuario)
+    # 2. SUBVISTA: SETTINGS (Gestión de nombre de usuario)
     elif st.session_state.profile_subview == "Settings":
         if st.button("⬅️ Volver al Perfil"):
             st.session_state.profile_subview = "Main"
@@ -165,7 +183,7 @@ if st.session_state.seccion_activa == "Profile":
         st.title("📈 Statistics")
         st.info("Aquí verás tus gráficos de rendimiento y estadísticas de progreso.")
 
-    # 4. SUBVISTA: MEASURES
+    # 4. SUBVISTA: MEASURES (Tarjetas naranjas aplicadas aquí)
     elif st.session_state.profile_subview == "Measures":
         if st.button("⬅️ Volver al Perfil"):
             st.session_state.profile_subview = "Main"
