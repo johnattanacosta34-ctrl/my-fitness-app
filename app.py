@@ -4,11 +4,23 @@ from datetime import datetime
 st.set_page_config(page_title="Daily Dashboard", page_icon="⚡", layout="centered")
 
 # --- GENERAL DESIGN (BLACK BACKGROUND, WHITE TEXT, ORANGE CARDS) ---
+
 st.markdown("""
     <style>
         :root { color-scheme: dark !important; }
         .stApp { background-color: #000000 !important; color: #FFFFFF !important; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
-        section[data-testid="stSidebar"], #MainMenu, footer { display: none !important; }
+        #MainMenu, footer { display: none !important; }
+        
+        /* Force bottom navigation columns to stay horizontal on mobile */
+        [data-testid="column"] {
+            width: 20% !important;
+            flex: 1 1 20% !important;
+            min-width: 55px !important;
+        }
+        div[data-testid="horizontal-row"] {
+            display: flex !important;
+            flex-direction: row !important;
+        }
         
         /* General texts in white */
         h1, h2, h3, h4, h5, h6, p, span, label, div { color: #FFFFFF !important; }
@@ -26,8 +38,8 @@ st.markdown("""
             border: none !important;
             border-radius: 12px !important;
             font-weight: 700 !important;
-            font-size: 15px !important;
-            padding: 12px 16px !important;
+            font-size: 13px !important;
+            padding: 10px 4px !important;
             box-shadow: 0 6px 15px rgba(255, 140, 66, 0.2) !important;
             transition: all 0.2s ease-in-out;
             width: 100% !important;
@@ -38,7 +50,7 @@ st.markdown("""
             border: none !important;
         }
         
-        .block-container { padding-bottom: 50px !important; }
+        .block-container { padding-bottom: 100px !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -101,7 +113,6 @@ if "body_history" not in st.session_state:
         "Legs": 55.0
     }])
 
-# Plans / Custom Workout Plan state initialization
 if "plans_data" not in st.session_state:
     st.session_state.plans_data = data.get("plans_data", {
         "plan_name": "Felipe workout",
@@ -226,22 +237,11 @@ DIET_SCHEDULE = {
     }
 }
 
-# --- NAVIGATION BAR ---
+# --- TOP HEADER (WELCOME SECTION ONLY) ---
 st.markdown(f"## **Welcome, {st.session_state.user_profile['username']}**")
 st.markdown("<hr style='margin: 10px 0; border-color: #2C2C2E;'>", unsafe_allow_html=True)
 
-nav_cols = st.columns(5)
-categories = ["Dashboard", "Workout", "Log", "Progress", "Plans"]
-
-for i, cat in enumerate(categories):
-    with nav_cols[i]:
-        if st.button(cat, use_container_width=True, key=f"nav_btn_{cat}"):
-            st.session_state.active_section = cat
-            st.rerun()
-
-st.markdown("<hr style='margin: 10px 0 20px 0; border-color: #2C2C2E;'>", unsafe_allow_html=True)
-
-# --- 1. DASHBOARD ---
+# --- ACTIVE SECTION CONTENT (RENDERED FIRST) ---
 if st.session_state.active_section == "Dashboard":
     now = datetime.now()
     date_str = now.strftime("%A, %B %d")
@@ -262,7 +262,6 @@ if st.session_state.active_section == "Dashboard":
     today_name = WEEKDAY_NAMES_MAP[now.weekday()]
     today_plan_data = st.session_state.plans_data["days"].get(today_name, {"name": "Rest Day", "type": "Rest", "exercises": []})
     
-    # Clean clickable button showing ONLY routine name and weekday
     if st.button(f"{today_plan_data['name']} ({today_name})", use_container_width=True, key="jump_to_workout_btn"):
         st.session_state.active_section = "Workout"
         st.rerun()
@@ -291,7 +290,6 @@ if st.session_state.active_section == "Dashboard":
     b3.markdown(f"<div class='custom-card'><div class='card-title'>Body Fat</div><div class='card-body' style='font-size:20px !important;'>{st.session_state.user_profile['fat']}%</div></div>", unsafe_allow_html=True)
     b4.markdown(f"<div class='custom-card'><div class='card-title'>Body Fat Mass</div><div class='card-body' style='font-size:20px !important;'>{st.session_state.user_profile['fat_mass']} kg</div></div>", unsafe_allow_html=True)
 
-# --- 2. WORKOUT ---
 elif st.session_state.active_section == "Workout":
     st.title("🏋️ Workout Hub")
     
@@ -313,13 +311,11 @@ elif st.session_state.active_section == "Workout":
     else:
         st.info(f"Today ({today_name}) is a Rest Day or has no exercises configured in your Plans section.")
 
-# --- 3. LOG ---
 elif st.session_state.active_section == "Log":
     now = datetime.now()
     st.title("Daily Log")
 
     with st.form("daily_log_styled_form"):
-        # 1. Date selector for metrics/log updating
         log_date = st.date_input("Log Date", value=now.date(), key="log_date_input")
 
         with st.expander("👤 Body Metrics", expanded=True):
@@ -437,11 +433,9 @@ elif st.session_state.active_section == "Log":
             save_data()
             st.success("Log and history updated successfully for " + date_str_iso + "!")
 
-# --- 4. PROGRESS ---
 elif st.session_state.active_section == "Progress":
     st.title("📈 Progress & History")
 
-    # --- TARGETS SECTION (MOVED TO TOP) ---
     st.markdown("### 🎯 Targets")
     
     t_col1, t_col2 = st.columns(2)
@@ -498,7 +492,6 @@ elif st.session_state.active_section == "Progress":
 
     st.markdown("<div style='margin: 25px 0;'></div>", unsafe_allow_html=True)
 
-    # --- READING SECTION ---
     st.markdown("### 📚 Books Read Tracker")
     st.markdown("Add books you've read or are currently reading. Completing them updates your total count instantly.")
 
@@ -528,7 +521,6 @@ elif st.session_state.active_section == "Progress":
     else:
         st.info("No books logged yet. Add your completed books above!")
 
-# --- 5. PLANS ---
 elif st.session_state.active_section == "Plans":
     st.title("Plans")
     
@@ -615,3 +607,15 @@ elif st.session_state.active_section == "Plans":
                     }
                     save_data()
                     st.success(f"{d_name} saved successfully!")
+
+# --- BOTTOM NAVIGATION MENU (MOVED TO THE BOTTOM OF THE PAGE) ---
+st.markdown("<hr style='margin: 40px 0 20px 0; border-color: #2C2C2E;'>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.6; margin-bottom: 10px;'>Navigation</p>", unsafe_allow_html=True)
+
+categories = ["Dashboard", "Workout", "Log", "Progress", "Plans"]
+cols_nav = st.columns(len(categories))
+for idx, cat in enumerate(categories):
+    with cols_nav[idx]:
+        if st.button(cat, use_container_width=True, key=f"bottom_nav_btn_{cat}"):
+            st.session_state.active_section = cat
+            st.rerun()
